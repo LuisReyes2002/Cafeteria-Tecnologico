@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "419688568194",
+    "firebase_url": "https://cafeteria2024-b355c-default-rtdb.firebaseio.com",
+    "project_id": "cafeteria2024-b355c",
+    "storage_bucket": "cafeteria2024-b355c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419688568194:android:60c2eb51d9313ab99d2b9b",
+        "android_client_info": {
+          "package_name": "com.recreo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0ce5F2yisWCFa1UKZUKhpDdPFfdBKQHY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  },
+  "devDependencies": {
+    "eslint": "9.13.0",
+    "eslint-plugin-import": "2.31.0"
+  }
+}

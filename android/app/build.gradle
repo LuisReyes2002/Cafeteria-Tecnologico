@@ -1,0 +1,51 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // Asegúrate de que este plugin esté presente
+}
+
+android {
+    namespace = "com.recreo.app" // Cambiado de cafeteria.lj a com.recreo.app
+    compileSdk 34
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    defaultConfig {
+        applicationId = "com.recreo.app" // Cambiado de cafeteria.lj a com.recreo.app
+        minSdk 23 // Cambiado a 23 para cumplir con los requisitos de Firebase
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            // Firma de depuración, deberás cambiarla cuando prepares tu aplicación para release.
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:32.0.0"))
+
+    // Añadir las dependencias para los productos Firebase que quieres usar
+    implementation 'com.google.android.gms:play-services-basement:18.1.0' // Version más reciente
+
+
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth") // Dependencia para autenticación
+}
