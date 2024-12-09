@@ -1,7 +1,23 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- The INTERNET permission is required for development. Specifically,
-         the Flutter tool needs it to communicate with the running application
-         to allow setting breakpoints, to provide hot reload, etc.
-    -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.recreo.app">
+
+    <!-- Permiso para internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="Lince Time"
+        android:icon="@mipmap/ic_launcher">
+
+        <!-- Tu actividad principal y otras configuraciones -->
+
+        <!-- Agregar la configuración del servicio FirebaseMessagingService -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="true"
+            tools:replace="android:exported">
+            <!-- Aquí pueden ir otros atributos o configuraciones del servicio -->
+        </service>
+
+    </application>
 </manifest>

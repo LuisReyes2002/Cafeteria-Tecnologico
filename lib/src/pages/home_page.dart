@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:recreo/src/pages/home_screen.dart';
-import 'package:recreo/src/pages/cart_screen.dart'; // Importa el CartScreen
-import 'package:recreo/src/pages/profile_screen.dart'; // Importa ProfileScreen
+import 'package:lince_time/src/pages/cart_screen.dart';
+import 'package:lince_time/src/pages/home_screen.dart';
+import 'package:lince_time/src/pages/profile_screen.dart';
+import 'package:lince_time/src/pages/OrderStatusScreen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,36 +15,54 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _pageIndex = 0;
 
-  final List<Widget> _pages = [];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _pages.add(const HomeScreen());
-    _pages.add(const FavoriteScreen());
-    _pages.add(const CartScreen());
-    _pages.add(const ChatScreen());
-    _pages.add(ProfileScreen());
+    _pages = [
+      const HomeScreen(),
+      const CartScreen(),
+      OrdersStatusScreen(), // Cambia por el ID real
+      ProfileScreen(),
+    ];
   }
 
   final List<Widget> _navigationItems = [
-    Icon(Icons.home_outlined),
-    Icon(Icons.favorite_border_outlined),
-    Icon(Icons.shopping_basket_outlined),
-    Icon(Icons.chat_outlined),
-    Icon(Icons.person_3_outlined),
+    const Icon(Icons.home_outlined),
+    const Icon(Icons.shopping_cart_sharp),
+    const Icon(Icons.receipt_long), // Cambia a un ícono de "pedido"
+    const Icon(Icons.person_3_outlined),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Eliminar la AppBar
       body: _pages[_pageIndex],
       bottomNavigationBar: CurvedNavigationBar(
-        backgroundColor: const Color.fromARGB(255, 246, 246, 246),
-        items: _navigationItems,
+        backgroundColor: const Color.fromARGB(220, 12, 99, 10),
+        items: [
+          Icon(
+            Icons.home_rounded,
+            color: _pageIndex == 0
+                ? Colors.white
+                : Colors.black, // Icon color changes based on selection
+          ),
+          Icon(
+            Icons.shopping_cart_sharp,
+            color: _pageIndex == 1 ? Colors.white : Colors.black,
+          ),
+          Icon(
+            Icons.receipt_long,
+            color: _pageIndex == 2 ? Colors.white : Colors.black,
+          ),
+          Icon(
+            Icons.person_2_rounded,
+            color: _pageIndex == 3 ? Colors.white : Colors.black,
+          ),
+        ],
         height: 75,
-        buttonBackgroundColor: Colors.tealAccent,
+        buttonBackgroundColor: const Color.fromARGB(255, 7, 120, 4),
         animationDuration: const Duration(milliseconds: 300),
         onTap: (index) {
           setState(() {
@@ -52,27 +71,5 @@ class _HomePageState extends State<HomePage> {
         },
       ),
     );
-  }
-}
-
-// Pantalla Favoritos
-class FavoriteScreen extends StatelessWidget {
-  const FavoriteScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-        child: Text("Pantalla Favoritos", style: TextStyle(fontSize: 24)));
-  }
-}
-
-// Pantalla Chat
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-        child: Text("Pantalla Chat", style: TextStyle(fontSize: 24)));
   }
 }

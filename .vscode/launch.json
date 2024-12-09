@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "recreo",
+            "name": "Lince Time",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "recreo (profile mode)",
+            "name": "Lince Time (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "recreo (release mode)",
+            "name": "Lince Time (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

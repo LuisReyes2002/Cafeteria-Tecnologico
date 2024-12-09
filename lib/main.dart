@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Importa Provider
-import 'package:firebase_core/firebase_core.dart'; // Importa Firebase
-import 'package:recreo/src/routes/app_routes.dart';
-import 'package:recreo/src/routes/routes.dart';
-import 'package:recreo/src/login_and_register_provider/login_provider.dart'; // Importa tu LoginProvider
-import 'package:recreo/src/login_and_register_provider/register_provider.dart'; // Importa tu RegisterProvider si es necesario
+import 'package:lince_time/src/pages/admin/notification_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Agregar import para Bloc
+import 'package:lince_time/src/routes/app_routes.dart';
+import 'package:lince_time/src/routes/routes.dart';
+import 'package:lince_time/src/login_and_register_provider/login_provider.dart';
+import 'package:lince_time/src/login_and_register_provider/register_provider.dart';
+import 'firebase_options.dart'; // Importar el archivo generado por FlutterFire CLI
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Asegúrate de que el framework de widgets esté inicializado
-  await Firebase.initializeApp(); // Inicializa Firebase aquí
-  runApp(const MyApp()); // Ejecuta tu aplicación
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase con las opciones específicas para la plataforma actual
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -20,17 +28,36 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-            create: (_) => LoginProvider()), // Incluye LoginProvider
-        ChangeNotifierProvider(
+        ChangeNotifierProvider(create: (_) => LoginProvider()),
+        ChangeNotifierProvider(create: (_) => RegisterProvider()),
+        BlocProvider(
             create: (_) =>
-                RegisterProvider()), // Incluye RegisterProvider si es necesario
+                NotificationBloc()), // Proveedor para el NotificationBloc
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        initialRoute: Routes.splash,
-        routes: appRoutes,
+      child: Consumer<LoginProvider>(
+        builder: (context, loginProvider, child) {
+          if (loginProvider.authStatus == AuthStatus.checking) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            initialRoute: _getInitialRoute(loginProvider),
+            routes: appRoutes,
+          );
+        },
       ),
     );
+  }
+
+  String _getInitialRoute(LoginProvider loginProvider) {
+    if (loginProvider.authStatus == AuthStatus.authenticated) {
+      if (loginProvider.role == 'admin') {
+        return Routes.admin;
+      } else if (loginProvider.role == 'user') {
+        return Routes.home;
+      }
+    }
+    return Routes.splash;
   }
 }

@@ -1,5 +1,5 @@
-// eslint.config.js
-module.exports = [
+module.exports = {
+  overrides: [
     {
       files: ["*.js"],
       parserOptions: {
@@ -17,6 +17,5 @@ module.exports = [
         "max-len": ["error", { code: 80 }], // Longitud máxima de línea
       },
     },
-  ];
-  
-  
+  ],
+};

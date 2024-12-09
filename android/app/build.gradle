@@ -2,11 +2,11 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services" // Asegúrate de que este plugin esté presente
+    id "com.google.gms.google-services"  // Este plugin es necesario para Firebase
 }
 
 android {
-    namespace = "com.recreo.app" // Cambiado de cafeteria.lj a com.recreo.app
+    namespace = "com.recreo.app"
     compileSdk 34
 
     compileOptions {
@@ -19,17 +19,17 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.recreo.app" // Cambiado de cafeteria.lj a com.recreo.app
-        minSdk 23 // Cambiado a 23 para cumplir con los requisitos de Firebase
+        applicationId "com.recreo.app"
+        minSdk 23
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
+        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // Firma de depuración, deberás cambiarla cuando prepares tu aplicación para release.
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.debug
         }
     }
 }
@@ -39,13 +39,16 @@ flutter {
 }
 
 dependencies {
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:32.0.0"))
 
-    // Añadir las dependencias para los productos Firebase que quieres usar
-    implementation 'com.google.android.gms:play-services-basement:18.1.0' // Version más reciente
-
-
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth") // Dependencia para autenticación
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+    implementation 'com.google.android.gms:play-services-basement:18.4.0'
+    implementation "com.google.firebase:firebase-analytics:22.1.2"
+    implementation "com.google.firebase:firebase-auth:23.1.0"
+    implementation 'com.google.firebase:firebase-messaging:23.0.3' 
+    implementation 'com.google.android.gms:play-services-base:18.5.0' 
+    implementation 'com.google.android.gms:play-services-location:21.3.0' 
 }
+apply plugin: 'com.google.gms.google-services'
+
+

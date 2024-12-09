@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:recreo/src/login_and_register_provider/register_provider.dart';
-import 'package:recreo/src/pages/login_and_register/login/login_page.dart';
+import 'package:lince_time/src/login_and_register_provider/register_provider.dart';
+import 'package:lince_time/src/pages/login_and_register/register/verification_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -19,6 +18,43 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false; // Estado de carga
+
+  Future<void> _registerUser() async {
+    setState(() {
+      _isLoading = true; // Iniciar carga
+    });
+
+    final registerProvider =
+        Provider.of<RegisterProvider>(context, listen: false);
+    bool success = await registerProvider.registerUser(
+      username: usernameController.text,
+      matricula: matriculaController.text,
+      password: passwordController.text,
+      tel: telController.text,
+      email: emailController.text,
+      onError: (error) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      },
+      onWarning: (warning) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(warning)));
+      },
+    );
+
+    setState(() {
+      _isLoading = false; // Detener carga
+    });
+
+    if (success) {
+      // Redirigir a la página de verificación
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const VerificationPage()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +73,15 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: const InputDecoration(labelText: 'Matrícula'),
               keyboardType: TextInputType.number,
               maxLength: 8,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
             ),
             TextField(
               controller: passwordController,
               decoration: InputDecoration(
                 labelText: 'Contraseña',
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  ),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_off
+                      : Icons.visibility),
                   onPressed: () {
                     setState(() {
                       _obscurePassword = !_obscurePassword;
@@ -60,55 +93,22 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             TextField(
               controller: telController,
-              decoration:
-                  const InputDecoration(labelText: 'Teléfono (10 dígitos)'),
+              decoration: const InputDecoration(labelText: 'Teléfono'),
               keyboardType: TextInputType.phone,
               maxLength: 10,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
             ),
             TextField(
               controller: emailController,
-              decoration:
-                  const InputDecoration(labelText: 'Correo Electrónico'),
+              decoration: const InputDecoration(labelText: 'Email'),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
+            // Botón de registro
             ElevatedButton(
-              onPressed: () {
-                final registerProvider =
-                    Provider.of<RegisterProvider>(context, listen: false);
-                registerProvider
-                    .registerUser(
-                  username: usernameController.text,
-                  matricula: matriculaController.text,
-                  password: passwordController.text,
-                  tel: telController.text,
-                  email: emailController.text,
-                  onError: (errorMessage) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(errorMessage)),
-                    );
-                  },
-                  onWarning: (warningMessage) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(warningMessage)),
-                    );
-                  },
-                )
-                    .then((success) {
-                  if (success) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              LoginPage()), // Elimina `const` aquí
-                    );
-                  }
-                });
-              },
-              child: const Text('Registrar'),
+              onPressed: _isLoading ? null : _registerUser,
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Registrarse'),
             ),
           ],
         ),

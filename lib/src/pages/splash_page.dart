@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Necesario para obtener el rol del usuario
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lince_time/src/routes/routes.dart';
+import 'package:lince_time/src/login_and_register_provider/login_provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -13,40 +15,44 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    // Verificar si el usuario ya está autenticado después de que se complete el ciclo de construcción
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkUserSession();
     });
   }
 
-  // Método para verificar si hay un usuario autenticado y su rol
   Future<void> _checkUserSession() async {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user != null) {
-      // Si ya hay un usuario autenticado, obtener su rol de Firestore
+      final lastScreen = await LoginProvider().getLastScreen();
+
+      if (lastScreen != null && lastScreen.isNotEmpty) {
+        Navigator.pushReplacementNamed(context, lastScreen);
+        return;
+      }
+
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
-      if (userDoc.exists) {
-        final String role = userDoc.get('role'); // Obtener el rol del usuario
+      if (userDoc.exists && userDoc.data()!.containsKey('role')) {
+        final String role = userDoc.get('role');
+
         if (role == 'admin') {
-          // Si el usuario es administrador, redirigir a la página de administrador
+          await LoginProvider().saveLastScreen('/admin');
           Navigator.pushReplacementNamed(context, '/admin');
         } else if (role == 'user') {
-          // Si el usuario es normal, redirigir a la página de inicio
+          await LoginProvider().saveLastScreen('/home');
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
-        // Si no se encuentra el rol, cerrar sesión y redirigir al login
         await FirebaseAuth.instance.signOut();
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, Routes.login);
       }
     } else {
-      // Si no hay usuario autenticado, redirigir al login
-      Future.delayed(const Duration(seconds: 5), () {
-        Navigator.pushReplacementNamed(context, '/login');
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.pushReplacementNamed(context, Routes.login);
       });
     }
   }
@@ -54,23 +60,13 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: Colors.white, // Fondo blanco
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/splash.png',
-              width: 400,
-              height: 400,
-              fit: BoxFit.contain, // Ajusta la imagen manteniendo la proporción
-            ),
+            Image.asset('assets/images/splash.png', width: 400, height: 400),
             const SizedBox(height: 20),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

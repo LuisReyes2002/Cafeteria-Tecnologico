@@ -5,28 +5,97 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 
-class ManageBeveragesScreen extends StatefulWidget {
-  const ManageBeveragesScreen({super.key});
+class ManageBeverageScreen extends StatefulWidget {
+  const ManageBeverageScreen({super.key});
 
   @override
-  _ManageBeveragesScreenState createState() => _ManageBeveragesScreenState();
+  _ManageBeverageScreenState createState() => _ManageBeverageScreenState();
 }
 
-class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
+class _ManageBeverageScreenState extends State<ManageBeverageScreen> {
   final TextEditingController beverageController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   File? _image;
-
   final picker = ImagePicker();
+
+  bool isLoading = false;
+
+  // Función para editar la bebida
+  void _editBeverage(
+      String beverageId, String currentTitle, double currentPrice) {
+    final TextEditingController titleController =
+        TextEditingController(text: currentTitle);
+    final TextEditingController priceController =
+        TextEditingController(text: currentPrice.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Editar Bebida'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Nombre de la Bebida",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: priceController,
+                decoration: InputDecoration(
+                  labelText: "Precio de la Bebida",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar diálogo
+              },
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newTitle = titleController.text;
+                final newPrice =
+                    double.tryParse(priceController.text) ?? currentPrice;
+
+                await FirebaseFirestore.instance
+                    .collection('beverages')
+                    .doc(beverageId)
+                    .update({
+                  'title': newTitle,
+                  'price': newPrice,
+                });
+
+                Navigator.of(context).pop(); // Cerrar diálogo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Bebida actualizada exitosamente."),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
-      } else {
-        print('No image selected.');
       }
     });
   }
@@ -35,7 +104,7 @@ class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
     try {
       String fileName = path.basename(image.path);
       Reference storageRef =
-          FirebaseStorage.instance.ref().child('beverages/images/$fileName');
+          FirebaseStorage.instance.ref().child('beverages/$fileName');
       UploadTask uploadTask = storageRef.putFile(image);
       TaskSnapshot taskSnapshot = await uploadTask;
       return await taskSnapshot.ref.getDownloadURL();
@@ -49,38 +118,60 @@ class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
     if (beverageController.text.isNotEmpty &&
         priceController.text.isNotEmpty &&
         _image != null) {
-      double price = double.parse(priceController.text);
+      setState(() {
+        isLoading = true;
+      });
 
+      double price = double.parse(priceController.text);
       String? imageUrl = await _uploadImage(_image!);
 
-      if (imageUrl != null) {
-        Map<String, dynamic> data = {
-          'title': beverageController.text,
-          'price': price,
-          'imageUrl': imageUrl,
-        };
+      Map<String, dynamic> data = {
+        'title': beverageController.text,
+        'price': price,
+        'imageUrl': imageUrl,
+        'isHidden': false, // Default value is not hidden
+      };
 
-        // Agregar bebida a Firestore
-        await FirebaseFirestore.instance.collection('beverages').add(data);
+      await FirebaseFirestore.instance.collection('beverages').add(data);
 
-        // Limpiar campos
-        beverageController.clear();
-        priceController.clear();
-        _image = null;
-        setState(() {}); // Actualiza la pantalla
-      }
+      beverageController.clear();
+      priceController.clear();
+      _image = null;
+
+      setState(() {
+        isLoading = false;
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                "Por favor, completa todos los campos y selecciona una imagen.")),
+        SnackBar(content: Text("Por favor, selecciona una imagen.")),
       );
     }
   }
 
+  void _toggleBeverageVisibility(
+      String beverageId, bool currentVisibility) async {
+    bool newVisibility = !currentVisibility;
+
+    await FirebaseFirestore.instance
+        .collection('beverages')
+        .doc(beverageId)
+        .update({
+      'isHidden': newVisibility,
+    });
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(newVisibility ? "Bebida visible" : "Bebida oculta"),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
   void _deleteBeverage(String id) async {
     await FirebaseFirestore.instance.collection('beverages').doc(id).delete();
-    setState(() {}); // Actualiza la pantalla después de eliminar
+    setState(() {});
   }
 
   @override
@@ -88,92 +179,117 @@ class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Gestionar Bebidas"),
-        backgroundColor: Colors.tealAccent,
+        backgroundColor: const Color.fromARGB(255, 53, 200, 220),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+          ),
+        ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Panel para agregar Bebida
+            ExpansionTile(
+              title: const Text("Agregar Bebida"),
               children: [
-                IconButton(
-                  icon: Icon(Icons.image),
-                  onPressed: _pickImage,
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.image),
+                        onPressed: _pickImage,
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: beverageController,
+                          decoration: InputDecoration(
+                            labelText: "Nombre de la Bebida",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Expanded(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: TextField(
-                    controller: beverageController,
+                    controller: priceController,
                     decoration: InputDecoration(
-                      labelText: "Nombre de la Bebida",
+                      labelText: "Precio de la Bebida",
                       border: OutlineInputBorder(),
                     ),
+                    keyboardType: TextInputType.number,
                   ),
+                ),
+                ElevatedButton(
+                  onPressed: _addBeverage,
+                  child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : const Text("Agregar Bebida"),
                 ),
               ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: TextField(
-              controller: priceController,
-              decoration: InputDecoration(
-                labelText: "Precio de la Bebida",
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          if (_image != null)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Image.file(
-                _image!,
-                height: 150,
-              ),
-            ),
-          ElevatedButton(
-            onPressed: _addBeverage,
-            child: const Text("Agregar Bebida"),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
+            // Mostrar las bebidas en un GridView
+            StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('beverages')
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                final beverageList = snapshot.data!.docs;
-                return GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Dos tarjetas por fila
-                    childAspectRatio: 0.75, // Ajuste de la relación de aspecto
-                  ),
-                  itemCount: beverageList.length,
-                  itemBuilder: (context, index) {
-                    final beverage = beverageList[index];
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-                    // Verificar la existencia de los campos antes de usarlos
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text("No hay bebidas disponibles"));
+                }
+
+                final beverageDocs = snapshot.data!.docs;
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: beverageDocs.length,
+                  itemBuilder: (context, index) {
+                    var beverage = beverageDocs[index];
                     final title = beverage['title'] ?? 'Sin nombre';
                     final price = beverage['price'] ?? 0.0;
                     final imageUrl = beverage['imageUrl'] ?? '';
 
                     return Card(
                       margin: const EdgeInsets.all(8.0),
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
                             child: imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                    ),
                                   )
-                                : Icon(Icons.local_drink,
-                                    size:
-                                        50), // Icono por defecto si no hay imagen
+                                : Icon(Icons.local_drink, size: 50),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -184,16 +300,46 @@ class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
                                   title,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
-                                Text("\$${price.toStringAsFixed(2)}"),
+                                Text(
+                                  "\$${price.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                      color: Colors.green, fontSize: 14),
+                                ),
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _deleteBeverage(beverage.id),
-                          ),
+                          OverflowBar(
+                            alignment: MainAxisAlignment.center,
+                            overflowAlignment: OverflowBarAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  beverage['isHidden']
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () {
+                                  _toggleBeverageVisibility(
+                                      beverage.id, beverage['isHidden']);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  _deleteBeverage(beverage.id);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  _editBeverage(beverage.id, title, price);
+                                },
+                              ),
+                            ],
+                          )
                         ],
                       ),
                     );
@@ -201,8 +347,8 @@ class _ManageBeveragesScreenState extends State<ManageBeveragesScreen> {
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

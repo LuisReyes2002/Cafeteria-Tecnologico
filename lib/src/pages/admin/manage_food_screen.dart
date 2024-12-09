@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lince_time/src/pages/admin/visibility_service.dart';
 import 'package:path/path.dart' as path;
 
 class ManageFoodScreen extends StatefulWidget {
@@ -16,36 +17,147 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
   final TextEditingController foodController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController guisoController = TextEditingController();
-
-  List<String> guisosList = []; // Lista para almacenar guisos adicionales
+  final VisibilityService _visibilityService = VisibilityService();
+  List<String> guisosList = [];
   File? _image;
   final picker = ImagePicker();
 
   bool? hasGuiso;
   bool isFoodExpanded = false;
   bool isLoading = false;
+  bool showGuisosList = false;
+
+  // Función para editar el platillo
+  void _editFood(String foodId, String currentTitle, double currentPrice) {
+    // Controladores para el diálogo de edición
+    final TextEditingController titleController =
+        TextEditingController(text: currentTitle);
+    final TextEditingController priceController =
+        TextEditingController(text: currentPrice.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Editar Platillo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Nombre del Platillo",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: priceController,
+                decoration: InputDecoration(
+                  labelText: "Precio del Platillo",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar diálogo
+              },
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Obtener los valores editados
+                final newTitle = titleController.text;
+                final newPrice =
+                    double.tryParse(priceController.text) ?? currentPrice;
+
+                // Actualizar Firestore
+                await FirebaseFirestore.instance
+                    .collection('foods')
+                    .doc(foodId)
+                    .update({
+                  'title': newTitle,
+                  'price': newPrice,
+                });
+
+                Navigator.of(context).pop(); // Cerrar diálogo
+
+                // Mostrar un mensaje de éxito
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Platillo actualizado exitosamente."),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+
       if (pickedFile != null) {
-        _image = File(pickedFile.path);
+        print("Archivo seleccionado: ${pickedFile.path}");
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      } else {
+        print("No se seleccionó ningún archivo.");
       }
-    });
+    } catch (e) {
+      print("Error seleccionando archivo: $e");
+    }
   }
 
   Future<String?> _uploadImage(File image) async {
     try {
       String fileName = path.basename(image.path);
+      print("Subiendo archivo: $fileName");
+
       Reference storageRef =
           FirebaseStorage.instance.ref().child('images/$fileName');
       UploadTask uploadTask = storageRef.putFile(image);
+
       TaskSnapshot taskSnapshot = await uploadTask;
-      return await taskSnapshot.ref.getDownloadURL();
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      print("URL de la imagen subida: $downloadUrl");
+      return downloadUrl;
     } catch (e) {
-      print("Error uploading image: $e");
+      print("Error al subir imagen: $e");
       return null;
     }
+  }
+
+  void _toggleFoodVisibility(String foodId, bool currentVisibility) async {
+    bool newVisibility = !currentVisibility;
+
+    await FirebaseFirestore.instance.collection('foods').doc(foodId).update({
+      'isHidden': newVisibility,
+    });
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(newVisibility ? "Platillo visible" : "Platillo oculto"),
+        duration: const Duration(seconds: 1),
+      ),
+    );
   }
 
   void _addFood() async {
@@ -64,6 +176,7 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
         'price': price,
         'imageUrl': imageUrl,
         'guisos_adicionales': guisosList.isEmpty ? [""] : guisosList,
+        'isHidden': false, // Default value is not hidden
       };
 
       await FirebaseFirestore.instance.collection('foods').add(data);
@@ -80,7 +193,10 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Por favor, selecciona una imagen.")),
+        SnackBar(
+          content: Text("Por favor, selecciona una imagen."),
+          duration: const Duration(seconds: 1),
+        ),
       );
     }
   }
@@ -94,8 +210,42 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
     }
   }
 
+  void _removeGuisoFromFood(String guiso) {
+    setState(() {
+      guisosList.remove(guiso);
+    });
+  }
+
   void _deleteFood(String id) async {
     await FirebaseFirestore.instance.collection('foods').doc(id).delete();
+    setState(() {});
+  }
+
+  void _hideFoodForUser(String foodId) async {
+    await FirebaseFirestore.instance
+        .collection('foods')
+        .doc(foodId)
+        .update({'isHidden': true});
+    setState(() {});
+  }
+
+  void _deleteGuiso(String guisoName) async {
+    final foods = await FirebaseFirestore.instance
+        .collection('foods')
+        .where('guisos_adicionales', arrayContains: guisoName)
+        .get();
+
+    for (var food in foods.docs) {
+      await FirebaseFirestore.instance.collection('foods').doc(food.id).update({
+        'guisos_adicionales': FieldValue.arrayRemove([guisoName]),
+      });
+      if ((food.data()['guisos_adicionales'] as List).isEmpty) {
+        await FirebaseFirestore.instance
+            .collection('foods')
+            .doc(food.id)
+            .update({'isHidden': true});
+      }
+    }
     setState(() {});
   }
 
@@ -104,13 +254,12 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Gestionar Platillos"),
-        backgroundColor: Colors.tealAccent,
+        backgroundColor: const Color.fromARGB(255, 53, 200, 220),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.pushReplacementNamed(
-                  context, '/login'); // Redirigir al login
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
@@ -132,20 +281,48 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
                     ),
                   ),
                 ),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: showGuisosList,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          showGuisosList = value ?? false;
+                        });
+                      },
+                    ),
+                    const Text("Mostrar lista de guisos"),
+                  ],
+                ),
+                if (showGuisosList)
+                  Column(
+                    children: guisosList
+                        .map((guiso) => ListTile(
+                              title: Text(guiso),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: () {
+                                  _removeGuisoFromFood(guiso);
+                                },
+                              ),
+                            ))
+                        .toList(),
+                  ),
                 ElevatedButton(
                   onPressed: _addGuiso,
                   child: const Text("Agregar Guiso"),
                 ),
-                if (guisosList.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: guisosList.map((guiso) => Text(guiso)).toList(),
-                    ),
-                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (guisoController.text.isNotEmpty) {
+                      _deleteGuiso(guisoController.text);
+                      guisoController.clear();
+                    }
+                  },
+                  child: const Text("Eliminar Guiso"),
+                ),
               ],
             ),
-            // Panel para agregar Platillo
             ExpansionTile(
               title: const Text("Agregar Platillo"),
               onExpansionChanged: (value) {
@@ -159,13 +336,20 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.image),
+                        icon: const Icon(Icons.image),
                         onPressed: _pickImage,
                       ),
+                      if (_image != null)
+                        Container(
+                          margin: const EdgeInsets.only(left: 10),
+                          width: 50,
+                          height: 50,
+                          child: Image.file(_image!),
+                        ),
                       Expanded(
                         child: TextField(
                           controller: foodController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: "Nombre del Platillo",
                             border: OutlineInputBorder(),
                           ),
@@ -178,7 +362,7 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: TextField(
                     controller: priceController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: "Precio del Platillo",
                       border: OutlineInputBorder(),
                     ),
@@ -205,101 +389,131 @@ class _ManageFoodScreenState extends State<ManageFoodScreen> {
                       onChanged: (value) {
                         setState(() {
                           hasGuiso = value;
-                          guisosList.clear();
                         });
                       },
                     ),
                     const Text("No"),
                   ],
                 ),
-                if (_image != null)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Image.file(
-                      _image!,
-                      height: 150,
-                    ),
-                  ),
-                if (isFoodExpanded)
-                  ElevatedButton(
-                    onPressed: _addFood,
-                    child: const Text("Agregar Platillo"),
-                  ),
+                ElevatedButton(
+                  onPressed: _addFood,
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Agregar Platillo"),
+                ),
               ],
             ),
-            // Listado de platillos
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.63,
-              child: StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance.collection('foods').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
+            // Mostrar los platillos en un GridView
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance.collection('foods').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-                  final foodList = snapshot.data!.docs;
-                  if (foodList.isEmpty) {
-                    return Center(child: Text("No se ha agregado comida"));
-                  }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-                  return GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemCount: foodList.length,
-                    itemBuilder: (context, index) {
-                      final food = foodList[index];
-                      return Card(
-                        margin: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: Image.network(
-                                food['imageUrl'],
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                food['title'],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text("No hay platillos disponibles"));
+                }
+
+                final foodDocs = snapshot.data!.docs;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: foodDocs.length,
+                  itemBuilder: (context, index) {
+                    var food = foodDocs[index];
+                    final title = food['title'] ?? 'Sin nombre';
+                    final price = food['price'] ?? 0.0;
+                    final imageUrl = food['imageUrl'] ?? '';
+
+                    return Card(
+                      margin: const EdgeInsets.all(8.0),
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: imageUrl.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Icon(Icons.local_dining, size: 50),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                "\$${food['price'].toString()}",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.green,
+                                Text(
+                                  "\$${price.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                      color: Colors.green, fontSize: 14),
                                 ),
+                              ],
+                            ),
+                          ),
+                          OverflowBar(
+                            alignment: MainAxisAlignment.center,
+                            overflowAlignment: OverflowBarAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  food['isHidden']
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () {
+                                  _toggleFoodVisibility(
+                                      food.id, food['isHidden']);
+                                },
                               ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete),
-                              onPressed: () {
-                                _deleteFood(food.id);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  _deleteFood(food.id);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  _editFood(
+                                      food.id, food['title'], food['price']);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-            if (isLoading) ...[
-              LinearProgressIndicator(),
-              SizedBox(height: 16),
-            ],
           ],
         ),
       ),

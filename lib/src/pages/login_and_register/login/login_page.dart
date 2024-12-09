@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:recreo/src/login_and_register_provider/login_provider.dart';
+import 'package:lince_time/src/login_and_register_provider/login_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -12,7 +15,34 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  bool _obscurePassword = true; // Control para mostrar/ocultar contraseña
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserRoleAndRedirect();
+  }
+
+  void _checkUserRoleAndRedirect() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists &&
+          userDoc.data() != null &&
+          userDoc.data()!.containsKey('role')) {
+        final String role = userDoc.get('role');
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admin');
+        } else if (role == 'user') {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +69,8 @@ class _LoginPageState extends State<LoginPage> {
                 labelText: 'Contraseña',
                 suffixIcon: IconButton(
                   icon: Icon(_obscurePassword
-                      ? Icons.visibility
-                      : Icons.visibility_off),
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
                   onPressed: () {
                     setState(() {
                       _obscurePassword = !_obscurePassword;
@@ -48,38 +78,20 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
               ),
-              onChanged: (value) {
-                if (value.contains(' ')) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content:
-                            Text('La contraseña no puede contener espacios.')),
-                  );
-                }
-              },
             ),
             SizedBox(height: 20),
-            if (loginProvider.isLoading) // Mostrar carga
-              CircularProgressIndicator(),
+            if (loginProvider.isLoading) CircularProgressIndicator(),
             ElevatedButton(
               onPressed: () async {
-                User? user = FirebaseAuth.instance
-                    .currentUser; // Verifica si el usuario está autenticado
-
-                if (user != null) {
-                  // El usuario ya está autenticado
-                  Navigator.pushReplacementNamed(context, '/home');
-                  return;
-                }
-
-                // Intenta iniciar sesión
                 loginProvider.loginUser(
                   email: emailController.text,
                   password: passwordController.text,
-                  onSuccessAdmin: () {
+                  onSuccessAdmin: () async {
+                    await loginProvider.saveLastScreen('/admin');
                     Navigator.pushReplacementNamed(context, '/admin');
                   },
-                  onSuccessUser: () {
+                  onSuccessUser: () async {
+                    await loginProvider.saveLastScreen('/home');
                     Navigator.pushReplacementNamed(context, '/home');
                   },
                   onError: (errorMessage) {
@@ -91,6 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                     emailController.clear();
                     passwordController.clear();
                   },
+                  context: context,
                 );
               },
               child: Text('Iniciar Sesión'),
