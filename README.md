@@ -1,4 +1,4 @@
-# Lince Time - App de Cafetería del Instituto
+# ![Logo de Lince](assets/images/logo_lince.png) Lince Time - App de Cafetería del Instituto
 
 **Lince Time** es una aplicación creada para la cafetería del Instituto, diseñada para facilitar la gestión de pedidos, el seguimiento de inventarios y la interacción con los usuarios. Los administradores pueden agregar, modificar y ocultar productos, mientras que los usuarios pueden realizar pedidos y ver el menú disponible.
 
@@ -25,10 +25,3 @@ Para obtener este archivo:
 1. Clona este repositorio:
    ```bash
    git clone https://github.com/usuario/lince-time.git
-- 🟦 (Dart)
-- 💻 (C++) 
-- 🔧 (CMake)
-- 🎶 (Groovy) (aunque no es una asociación común, puede dar una idea creativa de herramientas de programación)
-- 🌐 (JavaScript)
-- 🍏 (Swift) (representando Apple, ya que Swift es usado principalmente para desarrollar aplicaciones en el ecosistema Apple)
-- 🔍 (Otros)
