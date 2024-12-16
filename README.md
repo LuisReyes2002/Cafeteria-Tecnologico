@@ -25,3 +25,10 @@ Para obtener este archivo:
 1. Clona este repositorio:
    ```bash
    git clone https://github.com/usuario/lince-time.git
+- 🟦 (Dart)
+- 💻 (C++) 
+- 🔧 (CMake)
+- 🎶 (Groovy) (aunque no es una asociación común, puede dar una idea creativa de herramientas de programación)
+- 🌐 (JavaScript)
+- 🍏 (Swift) (representando Apple, ya que Swift es usado principalmente para desarrollar aplicaciones en el ecosistema Apple)
+- 🔍 (Otros)
