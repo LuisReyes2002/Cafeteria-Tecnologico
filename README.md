@@ -1,4 +1,4 @@
-# <img src="assets/images/splahs.png" alt="Logo de Lince" width="100"> Lince Time - App de Cafetería del Instituto
+# <img src="assets/images/splash.png" alt="Logo de Lince" width="100"> Lince Time - App de Cafetería del Instituto
 
 **Lince Time** es una aplicación creada para la cafetería del Instituto, diseñada para facilitar la gestión de pedidos, el seguimiento de inventarios y la interacción con los usuarios. Los administradores pueden agregar, modificar y ocultar productos, mientras que los usuarios pueden realizar pedidos y ver el menú disponible.
 
