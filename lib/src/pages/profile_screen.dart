@@ -95,26 +95,6 @@ class ProfileScreen extends StatelessWidget {
                   controller: TextEditingController(text: userData['tel']),
                 ),
                 const SizedBox(height: 32),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Función para cerrar sesión y redirigir al login
-                      Provider.of<LoginProvider>(context, listen: false)
-                          .logout();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child:
-                        Text('Cerrar sesión', style: TextStyle(fontSize: 18)),
-                  ),
-                ),
               ],
             ),
           );
