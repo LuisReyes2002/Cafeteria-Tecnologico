@@ -27,11 +27,10 @@ Para obtener este archivo:
    git clone https://github.com/usuario/lince-time.git
 
 ## Tecnologías Utilizadas
+ -🟦 (Dart)(https://img.shields.io/badge/Dart-69.8%25-blue)
+- 💻 (C++) (https://img.shields.io/badge/C%2B%2B-13.1%25-blue)
+- 🔧 (CMake)(https://img.shields.io/badge/CMake-10.0%25-blue)
+- 🎶 (Groovy) (aunque no es una asociación común, puede dar una idea creativa de herramientas de programación)(https://img.shields.io/badge/Groovy-2.1%25-blue)
+- 🌐 (JavaScript)(https://img.shields.io/badge/JavaScript-1.8%25-blue)
+- 🔍 (Otros)(https://img.shields.io/badge/Other-1.6%25-blue)
 
-- ![Dart](https://img.shields.io/badge/Dart-69.8%25-blue)
-- ![C++](https://img.shields.io/badge/C%2B%2B-13.1%25-blue)
-- ![CMake](https://img.shields.io/badge/CMake-10.0%25-blue)
-- ![Groovy](https://img.shields.io/badge/Groovy-2.1%25-blue)
-- ![JavaScript](https://img.shields.io/badge/JavaScript-1.8%25-blue)
-- ![Swift](https://img.shields.io/badge/Swift-1.6%25-blue)
-- ![Other](https://img.shields.io/badge/Other-1.6%25-blue)
