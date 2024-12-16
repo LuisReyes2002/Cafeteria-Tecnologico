@@ -1,16 +1,27 @@
-# Lince Time
+# Lince Time - App de Cafetería del Instituto
 
-A new Flutter project.
+**Lince Time** es una aplicación creada para la cafetería del Instituto, diseñada para facilitar la gestión de pedidos, el seguimiento de inventarios y la interacción con los usuarios. Los administradores pueden agregar, modificar y ocultar productos, mientras que los usuarios pueden realizar pedidos y ver el menú disponible.
 
-## Getting Started
+## Características
 
-This project is a starting point for a Flutter application.
+- **Gestión de pedidos**: Los usuarios pueden realizar pedidos y ver el estado de sus órdenes.
+- **Gestión de productos**: Los administradores pueden añadir o eliminar productos del menú y ocultarlos si es necesario.
+- **Notificaciones**: Los usuarios reciben notificaciones sobre el estado de sus pedidos.
 
-A few resources to get you started if this is your first Flutter project:
+## Requisitos previos
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Antes de ejecutar la aplicación, necesitas configurar un archivo `serviceAccountKey.json` de Firebase. Este archivo es necesario para autenticar y acceder a la base de datos de Firebase desde la aplicación. 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Para obtener este archivo:
+
+1. Ve a [Firebase Console](https://console.firebase.google.com/).
+2. Selecciona tu proyecto de Firebase (si no tienes uno, crea uno nuevo).
+3. En la sección "Configuración del Proyecto", selecciona **Cuentas de servicio**.
+4. Haz clic en **Generar nueva clave privada**. Esto descargará el archivo `serviceAccountKey.json` en tu máquina.
+5. Coloca este archivo en el directorio `assets/config/` de tu proyecto.
+
+## Instalación
+
+1. Clona este repositorio:
+   ```bash
+   git clone https://github.com/usuario/lince-time.git
